@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Container, Box, TextField, Button, Typography, Paper, Alert, Link, Fade, InputAdornment, IconButton } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient'; // GANTI KE SUPABASE
+import { supabase } from '../services/supabaseClient'; 
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -33,12 +33,11 @@ const RegisterPage = () => {
         setSuccess('');
 
         try {
-            // Registrasi menggunakan sistem autentikasi bawaan Supabase Auth
-            const { data, error: signUpError } = await supabase.auth.signUp({
+            // 1. DAFTARKAN KE SUPABASE AUTH (Sistem Keamanan)
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
-                    // Menyimpan metadata nama lengkap dan username agar bisa dibaca setelah login
                     data: {
                         full_name: formData.full_name,
                         username: formData.username,
@@ -48,13 +47,27 @@ const RegisterPage = () => {
 
             if (signUpError) throw signUpError;
 
-            // Jika konfigurasi Supabase kamu mewajibkan konfirmasi email
-            if (data?.user && data?.session === null) {
-                setSuccess('Registrasi berhasil! Silakan cek email kamu untuk verifikasi akun.');
-            } else {
-                setSuccess('Registrasi berhasil! Menuju halaman login...');
-                setTimeout(() => navigate('/login'), 2000);
+            // 2. MASUKKAN DATA LANGSUNG KE TABEL USERS (Table Editor)
+            if (authData?.user) {
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert([
+                        {
+                            id: authData.user.id, // Menyamakan ID Auth dengan ID di tabel users kamu
+                            username: formData.username,
+                            email: formData.email,
+                            password: formData.password, // Teks biasa untuk kebutuhan testing login bypass
+                            full_name: formData.full_name,
+                            role: 'user' // Default role sebagai user biasa
+                        }
+                    ]);
+
+                if (insertError) throw insertError;
             }
+
+            setSuccess('Registrasi berhasil! Data sudah masuk ke database. Menuju halaman login...');
+            setTimeout(() => navigate('/login'), 2000);
+
         } catch (err) {
             console.error('Error saat registrasi:', err);
             setError(err.message || 'Registrasi gagal, silakan coba lagi');
@@ -85,7 +98,6 @@ const RegisterPage = () => {
                 }
             }}>
             
-            {/* Decorative elements */}
             <Box sx={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
             <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
 
@@ -126,11 +138,7 @@ const RegisterPage = () => {
                                 value={formData.full_name}
                                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                                 required
-                                sx={{ 
-                                    '& .MuiOutlinedInput-root': { borderRadius: 3 },
-                                    '& .MuiOutlinedInput-root:hover': { '& > fieldset': { borderColor: '#667eea' } },
-                                    '& .MuiOutlinedInput-root.Mui-focused': { '& > fieldset': { borderColor: '#667eea' } }
-                                }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                             />
                             <TextField
                                 fullWidth
@@ -139,11 +147,7 @@ const RegisterPage = () => {
                                 value={formData.username}
                                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                 required
-                                sx={{ 
-                                    '& .MuiOutlinedInput-root': { borderRadius: 3 },
-                                    '& .MuiOutlinedInput-root:hover': { '& > fieldset': { borderColor: '#667eea' } },
-                                    '& .MuiOutlinedInput-root.Mui-focused': { '& > fieldset': { borderColor: '#667eea' } }
-                                }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                             />
                             <TextField
                                 fullWidth
@@ -153,11 +157,7 @@ const RegisterPage = () => {
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 required
-                                sx={{ 
-                                    '& .MuiOutlinedInput-root': { borderRadius: 3 },
-                                    '& .MuiOutlinedInput-root:hover': { '& > fieldset': { borderColor: '#667eea' } },
-                                    '& .MuiOutlinedInput-root.Mui-focused': { '& > fieldset': { borderColor: '#667eea' } }
-                                }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                             />
                             <TextField
                                 fullWidth
@@ -176,11 +176,7 @@ const RegisterPage = () => {
                                         </InputAdornment>
                                     )
                                 }}
-                                sx={{ 
-                                    '& .MuiOutlinedInput-root': { borderRadius: 3 },
-                                    '& .MuiOutlinedInput-root:hover': { '& > fieldset': { borderColor: '#667eea' } },
-                                    '& .MuiOutlinedInput-root.Mui-focused': { '& > fieldset': { borderColor: '#667eea' } }
-                                }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                             />
                             <TextField
                                 fullWidth
@@ -199,11 +195,7 @@ const RegisterPage = () => {
                                         </InputAdornment>
                                     )
                                 }}
-                                sx={{ 
-                                    '& .MuiOutlinedInput-root': { borderRadius: 3 },
-                                    '& .MuiOutlinedInput-root:hover': { '& > fieldset': { borderColor: '#667eea' } },
-                                    '& .MuiOutlinedInput-root.Mui-focused': { '& > fieldset': { borderColor: '#667eea' } }
-                                }}
+                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                             />
                             <Button
                                 type="submit"
@@ -223,7 +215,6 @@ const RegisterPage = () => {
                                     '&:hover': {
                                         background: 'linear-gradient(135deg, #5a67d8 0%, #6b46a0 100%)',
                                         transform: 'translateY(-2px)',
-                                        boxShadow: '0 12px 25px rgba(102,126,234,0.5)',
                                     }
                                 }}
                             >
@@ -234,12 +225,7 @@ const RegisterPage = () => {
                         <Box sx={{ mt: 3, textAlign: 'center' }}>
                             <Typography variant="body2" sx={{ color: '#888' }}>
                                 Sudah punya akun?{' '}
-                                <Link 
-                                    component={RouterLink} 
-                                    to="/login" 
-                                    underline="hover"
-                                    sx={{ color: '#667eea', fontWeight: 600 }}
-                                >
+                                <Link component={RouterLink} to="/login" underline="hover" sx={{ color: '#667eea', fontWeight: 600 }}>
                                     Login di sini
                                 </Link>
                             </Typography>
