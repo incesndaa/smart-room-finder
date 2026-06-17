@@ -1,34 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Container, Typography, Box, Card, CardContent, Chip,
-    Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, Paper, Button, Dialog, DialogTitle,
-    DialogContent, DialogActions, TextField, Alert, Snackbar,
-    IconButton, Tooltip, Fade, Tabs, Tab, InputAdornment, Avatar
+import { supabase } from '../supabaseClient';
+import { 
+    Container, Typography, Box, Tabs, Tab, Table, TableBody, 
+    TableCell, TableContainer, TableHead, TableRow, Paper, Button, 
+    TextField, Dialog, DialogActions, DialogContent, DialogTitle, 
+    Snackbar, Alert, Grid, Card, CardContent, Divider, Chip, 
+    IconButton, Tooltip, Select, MenuItem, InputLabel, FormControl,
+    TablePagination
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import EventIcon from '@mui/icons-material/Event';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import PersonIcon from '@mui/icons-material/Person';
-import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
-import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import LockIcon from '@mui/icons-material/Lock';
-import PeopleIcon from '@mui/icons-material/People';
-import { supabase } from '../services/supabaseClient'; // GANTI KE SUPABASE CLIENT
-import { useAuth } from '../context/AuthContext';
-import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate } from 'react-router-dom';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import SchoolIcon from '@mui/icons-material/School';
+import { 
+    Dashboard as DashboardIcon, 
+    MeetingRoom as RoomIcon, 
+    EventAvailable as BookingIcon, 
+    People as PeopleIcon, 
+    Delete as DeleteIcon, 
+    Edit as EditIcon, 
+    CheckCircle as CheckCircleIcon, 
+    Cancel as CancelIcon, 
+    Refresh as RefreshIcon,
+    Download as DownloadIcon,
+    Notifications as NotificationIcon
+} from '@mui/icons-material';
 
-const AdminDashboardPage = () => {
-   const [tabValue, setTabValue] = useState(0);
+export default function AdminDashboardPage() {
+    // Tab Navigation State
+    const [tabValue, setTabValue] = useState(0);
     
     // Core Data States
     const [bookings, setBookings] = useState([]);
@@ -659,4 +655,5 @@ const AdminDashboardPage = () => {
         </Container>
     );
 }
+
 export default AdminDashboardPage;
