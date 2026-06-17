@@ -656,4 +656,3 @@ export default function AdminDashboardPage() {
     );
 }
 
-export default AdminDashboardPage;
