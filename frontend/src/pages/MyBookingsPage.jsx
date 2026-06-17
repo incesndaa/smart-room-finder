@@ -4,39 +4,70 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EventIcon from '@mui/icons-material/Event';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
-import api from '../services/api';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import { supabase } from '../services/supabaseClient'; // GANTI KE SUPABASE
+import { useAuth } from '../context/AuthContext'; // PANGGIL USEAUTH UNTUK AMBIL USER ID
+import LoadingSpinner from '../components/LoadingSpinner'; // Disesuaikan folder importnya
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 const MyBookingsPage = () => {
+    const { user } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
-        loadBookings();
-    }, []);
+        if (user) {
+            loadBookings();
+        }
+    }, [user]);
 
+    // 1. AMBIL DATA RIWAYAT BOOKING MILIK USER YANG AKTIF
     const loadBookings = async () => {
         try {
-            const response = await api.get('/bookings/my-bookings');
-            if (response.data.success) setBookings(response.data.data);
+            // Join table bookings dengan table rooms untuk mengambil nama ruangan
+            const { data, error } = await supabase
+                .from('bookings')
+                .select(`
+                    *,
+                    rooms (
+                        name
+                    )
+                `)
+                .eq('user_id', user.id) // Filter hanya data milik user yang sedang aktif
+                .order('booking_date', { ascending: false });
+
+            if (error) throw error;
+
+            // Format data agar room_name bisa dibaca langsung oleh komponen UI
+            const formattedBookings = data.map(b => ({
+                ...b,
+                room_name: b.rooms ? b.rooms.name : 'Ruangan Tidak Diketahui'
+            }));
+
+            setBookings(formattedBookings);
         } catch (error) {
+            console.error('Error load bookings:', error);
             setSnackbar({ open: true, message: 'Gagal memuat data booking', severity: 'error' });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCancel = async (id) => {
+    // 2. FUNGSI UNTUK MEMBATALKAN/MENGHAPUS BOOKING
+    const handleCancel = async (bookingId) => {
         try {
-            const response = await api.delete(`/bookings/${id}`);
-            if (response.data.success) {
-                setSnackbar({ open: true, message: 'Booking berhasil dibatalkan', severity: 'success' });
-                loadBookings();
-            }
+            const { error } = await supabase
+                .from('bookings')
+                .delete()
+                .eq('id', bookingId);
+
+            if (error) throw error;
+
+            setSnackbar({ open: true, message: 'Booking berhasil dibatalkan', severity: 'success' });
+            loadBookings(); // Reload data setelah berhasil dihapus
         } catch (error) {
+            console.error('Error cancel booking:', error);
             setSnackbar({ open: true, message: 'Gagal membatalkan booking', severity: 'error' });
         }
     };
@@ -45,9 +76,13 @@ const MyBookingsPage = () => {
         switch (status) {
             case 'approved':
                 return { bg: '#E8F8F5', text: '#27AE60', label: 'Disetujui' };
+            case 'pending_sekre':
+            case 'pending_bsp':
             case 'pending':
                 return { bg: '#FEF9E7', text: '#F39C12', label: 'Menunggu Persetujuan' };
             case 'rejected':
+            case 'rejected_sekre':
+            case 'rejected_bsp':
                 return { bg: '#FDEDEC', text: '#E74C3C', label: 'Ditolak' };
             case 'cancelled':
                 return { bg: '#F2F4F4', text: '#7F8C8D', label: 'Dibatalkan' };
@@ -60,6 +95,9 @@ const MyBookingsPage = () => {
 
     return (
         <Container maxWidth="lg" sx={{ py: 5 }}>
+            <Typography variant="h4" fontWeight={700} sx={{ color: '#1a1a2e', mb: 4 }}>
+                Riwayat Booking Saya
+            </Typography>
 
             {bookings.length === 0 ? (
                 <Box textAlign="center" py={8}>
@@ -71,8 +109,8 @@ const MyBookingsPage = () => {
                     {bookings.map((booking, index) => {
                         const status = getStatusColor(booking.status);
                         return (
-                            <Grid item xs={12} key={booking.id} sx={{ display: 'flex', width: '100%'  }}>
-                                <Fade in timeout={300 + index * 100} style={{ width: '100%', display: 'flex'}}>
+                            <Grid item xs={12} key={booking.id} sx={{ display: 'flex', width: '100%' }}>
+                                <Fade in timeout={300 + index * 100} style={{ width: '100%', display: 'flex' }}>
                                     <Card sx={{
                                         borderRadius: 3,
                                         overflow: 'hidden',
@@ -82,24 +120,29 @@ const MyBookingsPage = () => {
                                         height: '100%',
                                         minHeight: 200,
                                         display: 'flex',
-                                        flexDirection: 'column'
+                                        flexDirection: 'column',
+                                        position: 'relative'
                                     }}>
                                         <CardContent sx={{ flex: 1, p: 3 }}>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                                                 <Box sx={{ flex: 1 }}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                                                         <Typography variant="h6" fontWeight={700} sx={{ color: '#1a1a2e' }}>
                                                             {booking.room_name}
                                                         </Typography>
-
+                                                        
+                                                        {/* Chip Status */}
+                                                        <Chip 
+                                                            label={status.label} 
+                                                            sx={{ bgcolor: status.bg, color: status.text, fontWeight: 600, borderRadius: 2 }} 
+                                                        />
                                                     </Box>
 
                                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                             <EventIcon fontSize="small" sx={{ color: '#888' }} />
                                                             <Typography variant="body2" sx={{ color: '#555' }}>
-                                                                {format(new Date(booking.booking_date), 'EEEE, dd MMMM yyyy', { locale: id })}
+                                                                {booking.booking_date ? format(new Date(booking.booking_date), 'EEEE, dd MMMM yyyy', { locale: id }) : '-'}
                                                             </Typography>
                                                         </Box>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -112,11 +155,11 @@ const MyBookingsPage = () => {
 
                                                     {booking.purpose && (
                                                         <Typography variant="body2" sx={{ color: '#666', mt: 2 }}>
-                                                            {booking.purpose}
+                                                            <strong>Keperluan:</strong> {booking.purpose}
                                                         </Typography>
                                                     )}
 
-                                                    {/* Pesan tambahan berdasarkan status */}
+                                                    {/* Informasi Alur Persetujuan Kampus */}
                                                     {booking.status === 'pending_sekre' && (
                                                         <Alert severity="warning" sx={{ mt: 2, borderRadius: 2 }}>
                                                             Booking menunggu verifikasi dari Sekretariat
@@ -139,12 +182,21 @@ const MyBookingsPage = () => {
                                                     )}
                                                     {booking.status === 'approved' && (
                                                         <Alert severity="success" sx={{ mt: 2, borderRadius: 2 }}>
-                                                            Booking telah disetujui! 
+                                                            Booking telah disetujui! Silakan gunakan ruangan sesuai jadwal.
                                                         </Alert>
                                                     )}
                                                 </Box>
 
-
+                                                {/* Tombol Batal/Delete Booking jika status masih pending */}
+                                                {booking.status.startsWith('pending') && (
+                                                    <IconButton 
+                                                        onClick={() => handleCancel(booking.id)} 
+                                                        color="error" 
+                                                        sx={{ position: 'absolute', right: 16, bottom: 16 }}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                )}
                                             </Box>
                                         </CardContent>
                                     </Card>

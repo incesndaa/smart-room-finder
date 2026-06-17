@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Container, Box, TextField, Button, Typography, Paper, Alert, Link, Fade, InputAdornment, IconButton } from '@mui/material';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import api from '../services/api';
+import { supabase } from '../services/supabaseClient'; // GANTI KE SUPABASE
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import SchoolIcon from '@mui/icons-material/School';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 const RegisterPage = () => {
@@ -31,20 +30,37 @@ const RegisterPage = () => {
 
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
-            const { confirmPassword, ...registerData } = formData;
-            const response = await api.post('/auth/register', registerData);
-            if (response.data.success) {
-                setSuccess('Registrasi berhasil! Silakan login.');
-                setTimeout(() => navigate('/login'), 2000);
+            // Registrasi menggunakan sistem autentikasi bawaan Supabase Auth
+            const { data, error: signUpError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    // Menyimpan metadata nama lengkap dan username agar bisa dibaca setelah login
+                    data: {
+                        full_name: formData.full_name,
+                        username: formData.username,
+                    }
+                }
+            });
+
+            if (signUpError) throw signUpError;
+
+            // Jika konfigurasi Supabase kamu mewajibkan konfirmasi email
+            if (data?.user && data?.session === null) {
+                setSuccess('Registrasi berhasil! Silakan cek email kamu untuk verifikasi akun.');
             } else {
-                setError(response.data.message);
+                setSuccess('Registrasi berhasil! Menuju halaman login...');
+                setTimeout(() => navigate('/login'), 2000);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Registrasi gagal');
+            console.error('Error saat registrasi:', err);
+            setError(err.message || 'Registrasi gagal, silakan coba lagi');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     return (
@@ -53,7 +69,7 @@ const RegisterPage = () => {
                 minHeight: '100vh',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justify: 'center',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 position: 'relative',
                 overflow: 'hidden',
@@ -70,24 +86,8 @@ const RegisterPage = () => {
             }}>
             
             {/* Decorative elements */}
-            <Box sx={{
-                position: 'absolute',
-                top: -50,
-                right: -50,
-                width: 300,
-                height: 300,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-            }} />
-            <Box sx={{
-                position: 'absolute',
-                bottom: -80,
-                left: -80,
-                width: 250,
-                height: 250,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.08)',
-            }} />
+            <Box sx={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+            <Box sx={{ position: 'absolute', bottom: -80, left: -80, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
 
             <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 2 }}>
                 <Fade in timeout={800}>
