@@ -432,7 +432,7 @@ const HomePage = () => {
             }
 
             // Simpan data booking ke tabel bookings
-            const { error: insertError } = await supabase
+           const { error: insertError } = await supabase
                 .from('bookings')
                 .insert([
                     {
@@ -442,7 +442,9 @@ const HomePage = () => {
                         start_time: bookingData.start_time,
                         end_time: bookingData.end_time,
                         purpose: bookingData.purpose || 'Kegiatan Kampus',
-                        status: 'pending_sekre' // ← KITA UBAH DI SINI BIAR DB GAK NGAMBEK
+                        status: 'pending_sekre',
+                        // Tambahkan baris di bawah ini untuk mengisi kolom attendee_name yang diminta database
+                        attendee_name: user.user_metadata?.full_name || user.email 
                     }
                 ]);
 
