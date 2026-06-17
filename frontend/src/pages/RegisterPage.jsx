@@ -32,7 +32,7 @@ const RegisterPage = () => {
         setError('');
         setSuccess('');
 
-        try {
+try {
             // 1. DAFTARKAN KE SUPABASE AUTH (Sistem Keamanan)
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: formData.email,
@@ -47,18 +47,18 @@ const RegisterPage = () => {
 
             if (signUpError) throw signUpError;
 
-            // 2. MASUKKAN DATA LANGSUNG KE TABEL USERS (Table Editor)
+            // 2. MASUKKAN DATA KE TABEL USERS (Tanpa memasukkan kolom id manual)
             if (authData?.user) {
                 const { error: insertError } = await supabase
                     .from('users')
                     .insert([
                         {
-                            id: authData.user.id, // Menyamakan ID Auth dengan ID di tabel users kamu
+                            // Kita hapus baris "id: authData.user.id" dari sini!
                             username: formData.username,
                             email: formData.email,
-                            password: formData.password, // Teks biasa untuk kebutuhan testing login bypass
+                            password: formData.password, // Teks biasa untuk testing login
                             full_name: formData.full_name,
-                            role: 'user' // Default role sebagai user biasa
+                            role: 'user' 
                         }
                     ]);
 
