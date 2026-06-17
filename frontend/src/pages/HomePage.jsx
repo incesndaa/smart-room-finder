@@ -412,6 +412,7 @@ const HomePage = () => {
     };
 
     // 2. SUBMIT BOOKING LANGSUNG KE SUPABASE
+    // 2. SUBMIT BOOKING LANGSUNG KE SUPABASE
     const handleBookingSubmit = async (bookingData) => {
         try {
             // Cek tabrakan jadwal booking di Supabase
@@ -435,13 +436,13 @@ const HomePage = () => {
                 .from('bookings')
                 .insert([
                     {
-                        user_id: user.id, // Ambil ID user dari AuthContext session
+                        user_id: user.id, 
                         room_id: bookingData.room_id,
                         booking_date: bookingData.booking_date,
                         start_time: bookingData.start_time,
                         end_time: bookingData.end_time,
                         purpose: bookingData.purpose || 'Kegiatan Kampus',
-                        status: 'pending' // Status bawaan awal
+                        status: 'pending_sekre' // ← KITA UBAH DI SINI BIAR DB GAK NGAMBEK
                     }
                 ]);
 
